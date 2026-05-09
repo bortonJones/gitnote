@@ -1,92 +1,210 @@
 # GitNote
 
-GitNote 是一个 Android 优先的 Flutter App，用 GitHub API 同步仓库中的 Markdown 笔记，并提供本地缓存、目录浏览和阅读能力。
+[English](README.md) | [简体中文](README.zh-CN.md)
 
-## 功能概览
+A lightweight offline-first GitHub Markdown reader for mobile.
 
-- 配置单个 GitHub 仓库进行同步
-- 仅同步指定仓库或子目录下的 Markdown 文件
-- 目录树浏览、搜索、下拉刷新
-- Markdown 内容按需下载并缓存到本地
-- 基于 `sha` 做增量同步
+GitNote is an Android-first Flutter app for:
 
-## 环境要求
+- Syncing Markdown documents from a GitHub repository
+- Local caching
+- Offline reading
+- Directory browsing
+- Quick sharing
+
+GitNote is not:
+
+- A note-taking platform
+- A collaboration system
+- A rich text editor
+- A universal file manager
+
+GitNote has one simple goal:
+
+> Let you read your own Markdown knowledge base lightly, quickly, and comfortably after leaving your computer.
+
+------
+
+# Features
+
+- GitHub repository sync
+- Offline-first reading
+- Local cache
+- Markdown reading
+- Directory tree browsing
+- Incremental sync via `sha`
+- Pull-to-refresh
+- Lightweight package size
+- Fast startup
+- Share Markdown to other apps
+
+------
+
+# Screenshots
+
+> TODO
+
+Recommended screenshots:
+
+- Repository setup page
+- Directory tree page
+- Markdown reader page
+- Offline reading
+- Share action
+
+------
+
+# Use Cases
+
+## AI Prompt Repository
+
+```text
+/prompts
+  coding.md
+  translate.md
+  agent.md
+```
+
+## Technical Documentation
+
+```text
+/docs
+  api.md
+  deploy.md
+  architecture.md
+```
+
+## Personal Knowledge Base
+
+```text
+/notes
+  frontend.md
+  linux.md
+  ai.md
+```
+
+## Novel / World Building
+
+```text
+/world
+  races.md
+  timeline.md
+  map.md
+```
+
+------
+
+# Supported File Types
+
+GitNote focuses on:
+
+- `.md`
+- `.txt`
+- Markdown embedded images
+
+GitNote will continue focusing on:
+
+> Lightweight text-based knowledge reading.
+
+------
+
+# File Type Philosophy
+
+GitNote is intentionally minimal.
+
+The project will not evolve into:
+
+- Office Viewer
+- Rich Text Editor
+- Universal File Manager
+
+Therefore GitNote will not support built-in rendering for:
+
+- PDF
+- DOCX
+- Excel
+- PPT
+
+For these file types, GitNote may only provide:
+
+- Download
+- Share
+- Open with external apps
+
+This is a long-term product philosophy, not a temporary limitation.
+
+------
+
+# Getting Started
+
+## Environment
 
 - Flutter SDK 3.29.x
 - JDK 17
 - Android SDK
 
-如果你的本机路径和项目默认配置不同，需要更新 `android/local.properties`。
+------
 
-如果 Flutter SDK 目录属于另一个 Windows 用户，Flutter 可能会报 Git `dubious ownership`。可执行：
-
-```bash
-git config --global --add safe.directory C:/dev/flutter
-```
-
-## 使用说明
-
-### 1. 启动应用
-
-在项目根目录执行：
+## Run
 
 ```bash
 flutter pub get
 flutter run
 ```
 
-如果你只想做检查或验证构建，可额外执行：
+Build APK:
 
 ```bash
-flutter analyze
-flutter test
 flutter build apk
 ```
 
-### 2. 首次进入后的仓库配置
+------
 
-应用首次启动时会直接进入“GitHub 仓库设置”页面，需要填写：
+# Repository Setup
 
-- `仓库链接`：完整 GitHub 仓库地址，例如 `https://github.com/owner/repo`
-- `branch`：默认 `main`
-- `token（可选）`：公开仓库可留空；私有仓库或需要更高 GitHub API 限额时建议填写
-- `rootPath（可选）`：默认 `/`，表示同步整个仓库；也可以填写某个子目录，例如 `docs` 或 `notes/work`
+When launching GitNote for the first time, configure:
 
-点击“测试连接”时，应用会校验仓库、分支和权限是否可用。
+- Repository URL
+- Branch
+- Token (optional)
+- Root Path (optional)
 
-点击“保存配置”后，应用会自动：
+Example:
 
-1. 测试连接
-2. 判断仓库、分支或 `rootPath` 是否变化
-3. 如果同步范围发生变化，则清空旧缓存
-4. 拉取 `rootPath` 下的 Markdown 目录树
-5. 写入本地索引并完成首次目录同步
+```text
+Repository:
+https://github.com/owner/repo
 
-保存成功后会自动进入笔记目录页。
+Branch:
+main
 
-### 3. 目录页的使用方式
+Root Path:
+docs
+```
 
-进入目录页后，可以：
+------
 
-- 点击文件夹进入下一级目录
-- 点击右上角搜索按钮，按文件名或目录名搜索
-- 点击“同步”按钮，重新拉取远端目录树并按 `sha` 增量同步
-- 下拉列表触发一次同步
-- 点击右上角设置按钮，返回配置页修改仓库信息
+# Sync Strategy
 
-目录页会显示最近同步时间。文件夹项会显示“已缓存文件数 / 总文件数”，文件项会显示该 Markdown 是否已经下载到本地。
+GitNote uses:
 
-### 4. Markdown 阅读行为
+- Repository tree sync
+- On-demand file caching
+- Incremental updates via `sha`
 
-点击某个 Markdown 文件后会进入阅读页：
+Current workflow:
 
-- 优先读取本地缓存
-- 如果本地尚未缓存该文件，则即时从 GitHub 下载并写入本地
-- 点击阅读页右上角刷新按钮，会强制重新拉取当前文件内容
+1. Sync directory tree
+2. Browse repository
+3. Open Markdown file
+4. Cache locally
+5. Read offline later
 
-当前版本的同步策略是“先同步目录树，文件内容按需缓存”，不是首次同步时一次性下载全部 Markdown 内容。
+GitNote does not download the entire repository on first launch.
 
-## 本地缓存结构
+------
+
+# Local Cache Structure
 
 ```text
 /app_data/github_notes/{repoKey}/
@@ -96,9 +214,55 @@ flutter build apk
     docs/xxx.md
 ```
 
-`repoKey` 由 `owner_repo_branch` 生成。
+------
 
-## 说明
+# Notes
 
-- `token` 当前保存在 `shared_preferences` 中
-- 如果 Trees API 返回 `truncated=true`，当前版本会直接提示仓库过大，不继续同步
+- GitHub token is currently stored via `shared_preferences`
+- If GitHub Trees API returns `truncated=true`, GitNote will stop syncing and show a repository-too-large warning
+
+------
+
+# Roadmap
+
+Planned:
+
+- Full-text search
+- Better offline experience
+- Multi-repository support
+- GitLab support
+- Gitee support
+- Better sharing experience
+
+Not planned:
+
+- Rich text editing
+- Office document rendering
+- Team collaboration system
+- Cloud document platform
+
+------
+
+# Philosophy
+
+GitNote is designed to be:
+
+- Lightweight
+- Fast
+- Offline-first
+- Markdown-first
+- Git workflow friendly
+
+GitNote is closer to:
+
+> A mobile Git Markdown reader
+
+than:
+
+> A full-featured note-taking platform.
+
+------
+
+# License
+
+MIT
