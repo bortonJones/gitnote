@@ -36,6 +36,21 @@ android {
     }
 }
 
+android.applicationVariants.all { variant ->
+    variant.outputs.all {
+        outputFileName = "gitnote-v${variant.versionName}-${variant.buildType.name}.apk"
+    }
+}
+
+tasks.register("copyVersionedReleaseApk", Copy) {
+    dependsOn("assembleRelease")
+
+    from(layout.buildDirectory.dir("outputs/apk/release"))
+    include("gitnote-v*-release.apk")
+    include("gitnote-v*-release.apk.sha1")
+    into(layout.buildDirectory.dir("outputs/flutter-apk"))
+}
+
 flutter {
     source = "../.."
 }

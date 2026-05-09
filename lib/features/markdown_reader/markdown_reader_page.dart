@@ -92,7 +92,7 @@ class MarkdownReaderPage extends ConsumerWidget {
 
     try {
       final tempDir = await getTemporaryDirectory();
-      final fileName = '${_safeFileName(title)}.md';
+      final fileName = _safeFileName(title);
       final file = File('${tempDir.path}${Platform.pathSeparator}$fileName');
       await file.writeAsString(content);
       await Share.shareXFiles(
