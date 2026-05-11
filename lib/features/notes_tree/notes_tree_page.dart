@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../app/providers.dart';
+import '../../core/utils/file_type_utils.dart';
 import '../../core/utils/tree_builder.dart';
 import '../../data/models/sync_file_meta.dart';
 import '../../domain/entities/repo_node.dart';
@@ -167,6 +168,19 @@ class _NotesTreePageState extends ConsumerState<NotesTreePage> {
                         ),
                     ],
                   ),
+                  if (_isSearchOpen)
+                    Positioned.fill(
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          setState(() {
+                            _isSearchOpen = false;
+                            _searchController.clear();
+                          });
+                        },
+                        child: const SizedBox.expand(),
+                      ),
+                    ),
                   if (_isSearchOpen)
                     Positioned(
                       left: 12,
@@ -426,25 +440,22 @@ class _RepoNodeTile extends StatelessWidget {
 
     if (node.type == RepoNodeType.file) {
       final meta = syncMetaMap[node.path];
-      final isDownloaded = meta?.isDownloaded ?? false;
-      final formattedTime = _formatSyncTime(meta?.updatedAt, isDownloaded);
+      final isReceived = meta?.isDownloaded ?? false;
+      final formattedTime = _formatSyncTime(meta?.updatedAt, isReceived);
+      final fileType = FileTypeUtils.typeOf(node.path);
 
       return ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-        leading: Icon(
-          isDownloaded ? Icons.check_circle : Icons.sync_problem,
-          color: isDownloaded ? Colors.green : Theme.of(context).hintColor,
-        ),
+        leading: Icon(_iconForFile(fileType)),
         title: Text(node.name),
-        subtitle: Text(node.path),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Icon(
-              isDownloaded ? Icons.cloud_done : Icons.cloud_off,
+              isReceived ? Icons.cloud_done : Icons.cloud_off,
               size: 18,
-              color: isDownloaded ? Colors.green : Theme.of(context).hintColor,
+              color: isReceived ? Colors.green : Theme.of(context).hintColor,
             ),
             if (formattedTime != null) ...[
               const SizedBox(height: 4),
@@ -463,10 +474,23 @@ class _RepoNodeTile extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 4),
       leading: const Icon(Icons.folder_outlined),
       title: Text('${node.name} [${stats.syncedCount}/${stats.totalCount}]'),
-      subtitle: node.path.isEmpty ? null : Text(node.path),
       trailing: const Icon(Icons.chevron_right),
       onTap: () => onOpenDirectory(node.path),
     );
+  }
+
+  IconData _iconForFile(SupportedFileType type) {
+    switch (type) {
+      case SupportedFileType.markdown:
+      case SupportedFileType.text:
+        return Icons.description_outlined;
+      case SupportedFileType.image:
+        return Icons.image_outlined;
+      case SupportedFileType.pdf:
+        return Icons.picture_as_pdf_outlined;
+      case SupportedFileType.unsupported:
+        return Icons.insert_drive_file_outlined;
+    }
   }
 
   String? _formatSyncTime(DateTime? updatedAt, bool isDownloaded) {

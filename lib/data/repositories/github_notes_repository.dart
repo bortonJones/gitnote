@@ -12,17 +12,29 @@ abstract class GithubNotesRepository {
   Future<RepoConfig?> loadConfig();
   Future<void> saveConfig(RepoConfig config);
   Future<void> testConnection(RepoConfig config);
-  Future<List<FlatRepoFile>> fetchRemoteMarkdownFiles(RepoConfig config);
+  Future<List<FlatRepoFile>> fetchRemoteFiles(RepoConfig config);
   Future<String> fetchRemoteMarkdownContent(RepoConfig config, String path);
+  Future<List<int>> fetchRemoteFileBytes(
+    RepoConfig config,
+    String path, {
+    void Function(int received, int total)? onReceiveProgress,
+  });
   Future<SyncIndex?> readSyncIndex(RepoConfig config);
   Future<void> writeSyncIndex(RepoConfig config, SyncIndex index);
   Future<String?> readCachedMarkdown(RepoConfig config, String path);
+  Future<List<int>?> readCachedFileBytes(RepoConfig config, String path);
   Future<String> writeCachedMarkdown(
     RepoConfig config,
     String path,
     String content,
   );
+  Future<String> writeCachedFileBytes(
+    RepoConfig config,
+    String path,
+    List<int> bytes,
+  );
   Future<void> deleteCachedMarkdown(RepoConfig config, String path);
+  Future<String> saveCachedFileToDownloads(RepoConfig config, String path);
   Future<void> clearRepoCache(RepoConfig config);
   Future<Map<String, SyncFileMeta>> readSyncFileMetaMap(RepoConfig config);
   Future<void> upsertSyncFileMeta(RepoConfig config, SyncFileMeta meta);
@@ -43,13 +55,26 @@ class GithubNotesRepositoryImpl implements GithubNotesRepository {
   final GitHubRemoteDataSource _remoteDataSource;
 
   @override
-  Future<List<FlatRepoFile>> fetchRemoteMarkdownFiles(RepoConfig config) {
-    return _remoteDataSource.fetchMarkdownFiles(config);
+  Future<List<FlatRepoFile>> fetchRemoteFiles(RepoConfig config) {
+    return _remoteDataSource.fetchFiles(config);
   }
 
   @override
   Future<String> fetchRemoteMarkdownContent(RepoConfig config, String path) {
     return _remoteDataSource.fetchMarkdownContent(config, path);
+  }
+
+  @override
+  Future<List<int>> fetchRemoteFileBytes(
+    RepoConfig config,
+    String path, {
+    void Function(int received, int total)? onReceiveProgress,
+  }) {
+    return _remoteDataSource.fetchFileBytes(
+      config,
+      path,
+      onReceiveProgress: onReceiveProgress,
+    );
   }
 
   @override
@@ -65,6 +90,7 @@ class GithubNotesRepositoryImpl implements GithubNotesRepository {
             path: file.path,
             sha: file.sha,
             type: 'blob',
+            size: file.size,
           ),
         )
         .toList();
@@ -79,6 +105,11 @@ class GithubNotesRepositoryImpl implements GithubNotesRepository {
   @override
   Future<String?> readCachedMarkdown(RepoConfig config, String path) {
     return _cacheLocalDataSource.readMarkdownFile(config, path);
+  }
+
+  @override
+  Future<List<int>?> readCachedFileBytes(RepoConfig config, String path) {
+    return _cacheLocalDataSource.readFileBytes(config, path);
   }
 
   @override
@@ -115,8 +146,29 @@ class GithubNotesRepositoryImpl implements GithubNotesRepository {
   }
 
   @override
+  Future<String> writeCachedFileBytes(
+    RepoConfig config,
+    String path,
+    List<int> bytes,
+  ) {
+    return _cacheLocalDataSource.writeFileBytes(
+      config: config,
+      repoPath: path,
+      bytes: bytes,
+    );
+  }
+
+  @override
   Future<void> deleteCachedMarkdown(RepoConfig config, String path) {
     return _cacheLocalDataSource.deleteMarkdownFile(config, path);
+  }
+
+  @override
+  Future<String> saveCachedFileToDownloads(RepoConfig config, String path) {
+    return _cacheLocalDataSource.saveCachedFileToDownloads(
+      config: config,
+      repoPath: path,
+    );
   }
 
   @override
@@ -140,10 +192,20 @@ class GithubNotesRepositoryImpl implements GithubNotesRepository {
       return;
     }
 
+    final previous = index.files.where((file) => file.path == meta.path);
+    final existing = previous.isEmpty ? null : previous.first;
+    final nextMeta = SyncFileMeta(
+      path: meta.path,
+      sha: meta.sha,
+      localFilePath: meta.localFilePath,
+      updatedAt: meta.updatedAt,
+      size: meta.size ?? existing?.size,
+    );
+
     final nextFiles = index.files
         .where((file) => file.path != meta.path)
         .toList()
-      ..add(meta);
+      ..add(nextMeta);
     nextFiles.sort((left, right) => left.path.compareTo(right.path));
 
     await writeSyncIndex(

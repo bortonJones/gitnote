@@ -37,6 +37,7 @@ class TreeBuilder {
                 path: currentPath,
                 name: segment,
                 sha: file.sha,
+                size: file.size,
               )
             : RepoNode.directory(
                 path: currentPath,

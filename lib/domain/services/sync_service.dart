@@ -11,7 +11,7 @@ class SyncService {
   final GithubNotesRepository _repository;
 
   Future<SyncResult> sync(RepoConfig config) async {
-    final remoteFiles = await _repository.fetchRemoteMarkdownFiles(config);
+    final remoteFiles = await _repository.fetchRemoteFiles(config);
     return syncWithRemoteFiles(config, remoteFiles);
   }
 
@@ -46,6 +46,7 @@ class SyncService {
             localFilePath: existing?.localFilePath ?? '',
             updatedAt:
                 existing?.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0),
+            size: remote.size,
           ),
         );
         continue;
@@ -62,6 +63,7 @@ class SyncService {
             sha: remote.sha,
             localFilePath: localFilePath,
             updatedAt: DateTime.now(),
+            size: remote.size,
           ),
         );
         if (existing == null) {
@@ -78,6 +80,7 @@ class SyncService {
               sha: remote.sha,
               localFilePath: existing.localFilePath,
               updatedAt: existing.updatedAt,
+              size: remote.size ?? existing.size,
             ),
           );
         } else {
@@ -87,6 +90,7 @@ class SyncService {
               sha: remote.sha,
               localFilePath: '',
               updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
+              size: remote.size,
             ),
           );
         }

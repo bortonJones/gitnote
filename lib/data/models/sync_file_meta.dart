@@ -4,12 +4,14 @@ class SyncFileMeta {
     required this.sha,
     required this.localFilePath,
     required this.updatedAt,
+    this.size,
   });
 
   final String path;
   final String sha;
   final String localFilePath;
   final DateTime updatedAt;
+  final int? size;
 
   bool get isDownloaded => localFilePath.trim().isNotEmpty;
 
@@ -19,6 +21,7 @@ class SyncFileMeta {
       'sha': sha,
       'localFilePath': localFilePath,
       'updatedAt': updatedAt.toIso8601String(),
+      'size': size,
     };
   }
 
@@ -29,6 +32,7 @@ class SyncFileMeta {
       localFilePath: json['localFilePath'] as String? ?? '',
       updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ??
           DateTime.fromMillisecondsSinceEpoch(0),
+      size: json['size'] as int?,
     );
   }
 }

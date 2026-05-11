@@ -20,6 +20,14 @@ class PathUtils {
     return path.toLowerCase().endsWith('.md');
   }
 
+  static bool hasHiddenPathSegment(String path) {
+    final normalized = path.replaceAll('\\', '/');
+    return normalized
+        .split('/')
+        .where((segment) => segment.isNotEmpty)
+        .any((segment) => segment.startsWith('.'));
+  }
+
   static bool isInsideRoot(String path, String rootPath) {
     if (rootPath.isEmpty) {
       return true;

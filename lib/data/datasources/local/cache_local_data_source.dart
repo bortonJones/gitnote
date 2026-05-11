@@ -68,7 +68,7 @@ class CacheLocalDataSource {
 
   Future<String?> readMarkdownFile(RepoConfig config, String repoPath) async {
     try {
-      final file = await _resolveMarkdownFile(config, repoPath);
+      final file = await resolveCachedFile(config, repoPath);
       if (!await file.exists()) {
         return null;
       }
@@ -84,7 +84,7 @@ class CacheLocalDataSource {
     required String content,
   }) async {
     try {
-      final file = await _resolveMarkdownFile(config, repoPath);
+      final file = await resolveCachedFile(config, repoPath);
       await file.parent.create(recursive: true);
       await file.writeAsString(content);
       return file.path;
@@ -95,7 +95,7 @@ class CacheLocalDataSource {
 
   Future<void> deleteMarkdownFile(RepoConfig config, String repoPath) async {
     try {
-      final file = await _resolveMarkdownFile(config, repoPath);
+      final file = await resolveCachedFile(config, repoPath);
       if (await file.exists()) {
         await file.delete();
       }
@@ -115,11 +115,77 @@ class CacheLocalDataSource {
     }
   }
 
-  Future<File> _resolveMarkdownFile(RepoConfig config, String repoPath) async {
+  Future<List<int>?> readFileBytes(RepoConfig config, String repoPath) async {
+    try {
+      final file = await resolveCachedFile(config, repoPath);
+      if (!await file.exists()) {
+        return null;
+      }
+      return file.readAsBytes();
+    } on FileSystemException catch (error) {
+      throw LocalStorageException('读取文件缓存失败: ${error.message}');
+    }
+  }
+
+  Future<String> writeFileBytes({
+    required RepoConfig config,
+    required String repoPath,
+    required List<int> bytes,
+  }) async {
+    try {
+      final file = await resolveCachedFile(config, repoPath);
+      await file.parent.create(recursive: true);
+      await file.writeAsBytes(bytes, flush: true);
+      return file.path;
+    } on FileSystemException catch (error) {
+      throw LocalStorageException('写入文件缓存失败: ${error.message}');
+    }
+  }
+
+  Future<String> saveCachedFileToDownloads({
+    required RepoConfig config,
+    required String repoPath,
+  }) async {
+    try {
+      final source = await resolveCachedFile(config, repoPath);
+      if (!await source.exists()) {
+        throw const LocalStorageException('文件尚未接收，无法保存。');
+      }
+      final target = await resolveDownloadFile(config, repoPath);
+      await target.parent.create(recursive: true);
+      await source.copy(target.path);
+      return target.path;
+    } on FileSystemException catch (error) {
+      throw LocalStorageException('保存文件失败: ${error.message}');
+    }
+  }
+
+  Future<File> resolveCachedFile(RepoConfig config, String repoPath) async {
     final filesDir = await getFilesDir(config);
     final segments =
         repoPath.split('/').where((segment) => segment.isNotEmpty).toList();
     return File(p.joinAll([filesDir.path, ...segments]));
+  }
+
+  Future<File> resolveDownloadFile(RepoConfig config, String repoPath) async {
+    Directory? downloadsDir;
+    try {
+      downloadsDir = await getDownloadsDirectory();
+    } catch (_) {
+      downloadsDir = null;
+    }
+    final baseDir = downloadsDir ??
+        Directory(
+          p.join(
+            (await getApplicationDocumentsDirectory()).path,
+            'Downloads',
+          ),
+        );
+    final segments =
+        repoPath.split('/').where((segment) => segment.isNotEmpty).toList();
+    return File(
+      p.joinAll([baseDir.path, 'GitNote', config.repoKey, ...segments]),
+    );
   }
 
   SyncIndex buildIndex({

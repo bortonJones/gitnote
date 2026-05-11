@@ -83,7 +83,7 @@ class ConfigSetupService {
       ConfigSetupStep.downloadDirectoryTree,
       onStepUpdate,
       () async {
-        remoteFiles = await _repository.fetchRemoteMarkdownFiles(newConfig);
+        remoteFiles = await _repository.fetchRemoteFiles(newConfig);
       },
     );
 

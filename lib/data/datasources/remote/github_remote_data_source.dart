@@ -13,10 +13,10 @@ class GitHubRemoteDataSource {
   final Dio _dio;
 
   Future<void> testConnection(RepoConfig config) async {
-    await fetchMarkdownFiles(config);
+    await fetchFiles(config);
   }
 
-  Future<List<FlatRepoFile>> fetchMarkdownFiles(RepoConfig config) async {
+  Future<List<FlatRepoFile>> fetchFiles(RepoConfig config) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         'https://api.github.com/repos/${config.owner}/${config.repo}/git/trees/${config.branch}',
@@ -27,7 +27,6 @@ class GitHubRemoteDataSource {
       final data = response.data ?? <String, dynamic>{};
       final truncated = data['truncated'] as bool? ?? false;
       if (truncated) {
-        // Keep the datasource boundary ready for future "shard by directory" sync.
         throw const RepoTooLargeException();
       }
 
@@ -36,11 +35,12 @@ class GitHubRemoteDataSource {
       return treeItems
           .whereType<Map<String, dynamic>>()
           .map(FlatRepoFile.fromJson)
-          .where((item) =>
-              item.type == 'blob' &&
-              PathUtils.isMarkdownFile(item.path) &&
-              !item.path.startsWith('.git/') &&
-              PathUtils.isInsideRoot(item.path, rootPath))
+          .where(
+            (item) =>
+                item.type == 'blob' &&
+                !PathUtils.hasHiddenPathSegment(item.path) &&
+                PathUtils.isInsideRoot(item.path, rootPath),
+          )
           .toList();
     } on DioException catch (error) {
       throw _mapDioException(error);
@@ -48,26 +48,39 @@ class GitHubRemoteDataSource {
   }
 
   Future<String> fetchMarkdownContent(RepoConfig config, String path) async {
+    final bytes = await fetchFileBytes(config, path);
     try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        'https://api.github.com/repos/${config.owner}/${config.repo}/contents/$path',
-        queryParameters: {'ref': config.branch},
-        options: _buildOptions(config),
+      return utf8.decode(bytes);
+    } on FormatException {
+      throw const NetworkRequestException('文件不是有效的 UTF-8 文本。');
+    }
+  }
+
+  Future<List<int>> fetchFileBytes(
+    RepoConfig config,
+    String path, {
+    void Function(int received, int total)? onReceiveProgress,
+  }) async {
+    try {
+      final response = await _dio.get<List<int>>(
+        _rawFileUrl(config, path),
+        options: _buildOptions(config).copyWith(
+          responseType: ResponseType.bytes,
+        ),
+        onReceiveProgress: onReceiveProgress,
       );
 
-      final data = response.data ?? <String, dynamic>{};
-      final encoded = data['content'] as String? ?? '';
-      if (encoded.isEmpty) {
-        throw const NetworkRequestException('GitHub 返回了空的 Markdown 内容。');
-      }
-
-      final normalized = encoded.replaceAll('\n', '');
-      return utf8.decode(base64.decode(normalized));
+      return response.data ?? const <int>[];
     } on DioException catch (error) {
       throw _mapDioException(error);
-    } on FormatException {
-      throw const NetworkRequestException('GitHub 返回的 Markdown 内容解析失败。');
     }
+  }
+
+  String _rawFileUrl(RepoConfig config, String path) {
+    return Uri.https(
+      'raw.githubusercontent.com',
+      '/${config.owner}/${config.repo}/${config.branch}/${path.split('/').map(Uri.encodeComponent).join('/')}',
+    ).toString();
   }
 
   Options _buildOptions(RepoConfig config) {

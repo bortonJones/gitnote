@@ -173,6 +173,7 @@ final markdownContentProvider =
         sha: existingMeta.sha,
         localFilePath: localFilePath,
         updatedAt: DateTime.now(),
+        size: existingMeta.size,
       ),
     );
     ref.invalidate(syncIndexProvider);

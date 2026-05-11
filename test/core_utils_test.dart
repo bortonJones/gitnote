@@ -20,6 +20,13 @@ void main() {
       expect(PathUtils.isInsideRoot('docs/sub/a.md', 'docs'), isTrue);
       expect(PathUtils.isInsideRoot('guide/a.md', 'docs'), isFalse);
     });
+
+    test('hasHiddenPathSegment detects dot files and directories', () {
+      expect(PathUtils.hasHiddenPathSegment('.codex'), isTrue);
+      expect(PathUtils.hasHiddenPathSegment('.vscode/settings.json'), isTrue);
+      expect(PathUtils.hasHiddenPathSegment('docs/.assets/demo.png'), isTrue);
+      expect(PathUtils.hasHiddenPathSegment('docs/readme.md'), isFalse);
+    });
   });
 
   test('TreeBuilder resolves relative image path', () {
