@@ -31,70 +31,32 @@ class SyncService {
 
     for (final remote in remoteFiles) {
       final existing = previousFiles[remote.path];
-      final shouldKeepDownloadedCopy = existing?.isDownloaded ?? false;
-      final needsDownload =
-          shouldKeepDownloadedCopy && (existing == null || existing.sha != remote.sha);
+      final isChanged = existing != null && existing.sha != remote.sha;
 
-      if (!needsDownload) {
-        if (existing == null) {
-          addedCount++;
+      if (existing == null) {
+        addedCount++;
+      } else if (isChanged) {
+        updatedCount++;
+        if (existing.isDownloaded) {
+          try {
+            await _repository.deleteCachedMarkdown(config, remote.path);
+          } catch (error) {
+            failures.add('${remote.path}: $error');
+          }
         }
-        nextMetas.add(
-          SyncFileMeta(
-            path: remote.path,
-            sha: remote.sha,
-            localFilePath: existing?.localFilePath ?? '',
-            updatedAt:
-                existing?.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0),
-            size: remote.size,
-          ),
-        );
-        continue;
       }
 
-      try {
-        final content =
-            await _repository.fetchRemoteMarkdownContent(config, remote.path);
-        final localFilePath =
-            await _repository.writeCachedMarkdown(config, remote.path, content);
-        nextMetas.add(
-          SyncFileMeta(
-            path: remote.path,
-            sha: remote.sha,
-            localFilePath: localFilePath,
-            updatedAt: DateTime.now(),
-            size: remote.size,
-          ),
-        );
-        if (existing == null) {
-          addedCount++;
-        } else {
-          updatedCount++;
-        }
-      } catch (error) {
-        failures.add('${remote.path}: $error');
-        if (existing != null) {
-          nextMetas.add(
-            SyncFileMeta(
-              path: existing.path,
-              sha: remote.sha,
-              localFilePath: existing.localFilePath,
-              updatedAt: existing.updatedAt,
-              size: remote.size ?? existing.size,
-            ),
-          );
-        } else {
-          nextMetas.add(
-            SyncFileMeta(
-              path: remote.path,
-              sha: remote.sha,
-              localFilePath: '',
-              updatedAt: DateTime.fromMillisecondsSinceEpoch(0),
-              size: remote.size,
-            ),
-          );
-        }
-      }
+      nextMetas.add(
+        SyncFileMeta(
+          path: remote.path,
+          sha: remote.sha,
+          localFilePath: isChanged ? '' : existing?.localFilePath ?? '',
+          updatedAt: isChanged
+              ? DateTime.fromMillisecondsSinceEpoch(0)
+              : existing?.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0),
+          size: remote.size,
+        ),
+      );
     }
 
     for (final entry in previousFiles.entries) {

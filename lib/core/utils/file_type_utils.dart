@@ -88,6 +88,25 @@ class FileTypeUtils {
     }
   }
 
+  static String mimeTypeFor(String path) {
+    switch (typeOf(path)) {
+      case SupportedFileType.markdown:
+        return 'text/markdown';
+      case SupportedFileType.text:
+        return 'text/plain';
+      case SupportedFileType.image:
+        final extension = _extensionOf(path);
+        if (extension == '.jpg') {
+          return 'image/jpeg';
+        }
+        return 'image/${extension.replaceFirst('.', '')}';
+      case SupportedFileType.pdf:
+        return 'application/pdf';
+      case SupportedFileType.unsupported:
+        return '*/*';
+    }
+  }
+
   static String _extensionOf(String path) {
     final fileName = path.split('/').last.toLowerCase();
     final dotIndex = fileName.lastIndexOf('.');

@@ -9,6 +9,7 @@ import 'package:share_plus/share_plus.dart';
 import '../../app/providers.dart';
 import '../../core/utils/file_type_utils.dart';
 import '../../core/utils/markdown_utils.dart';
+import '../../core/utils/native_file_share.dart';
 import '../../data/models/repo_config.dart';
 import '../../data/models/sync_file_meta.dart';
 import '../../data/repositories/github_notes_repository.dart';
@@ -300,8 +301,22 @@ class _MarkdownReaderPageState extends ConsumerState<MarkdownReaderPage> {
   Future<void> _shareFile() async {
     try {
       final result = await _ensureReceived();
+      final didNativeShare = await NativeFileShare.shareFile(
+        path: result.localFilePath,
+        title: widget.title,
+        mimeType: FileTypeUtils.mimeTypeFor(widget.repoPath),
+      );
+      if (didNativeShare) {
+        return;
+      }
       await Share.shareXFiles(
-        [XFile(result.localFilePath, name: widget.title)],
+        [
+          XFile(
+            result.localFilePath,
+            name: widget.title,
+            mimeType: FileTypeUtils.mimeTypeFor(widget.repoPath),
+          ),
+        ],
         text: widget.title,
         subject: widget.title,
       );
@@ -312,14 +327,20 @@ class _MarkdownReaderPageState extends ConsumerState<MarkdownReaderPage> {
 
   Future<void> _saveFile() async {
     try {
-      await _ensureReceived();
+      final received = await _ensureReceived();
       final config = await ref.read(repoConfigControllerProvider.future);
       if (config == null) {
         throw Exception('仓库配置不存在。');
       }
-      final savedPath = await ref
-          .read(notesRepositoryProvider)
-          .saveCachedFileToDownloads(config, widget.repoPath);
+      final savedPath = await NativeFileShare.saveFileToPublicDownloads(
+            sourcePath: received.localFilePath,
+            repoKey: config.repoKey,
+            repoPath: widget.repoPath,
+            mimeType: FileTypeUtils.mimeTypeFor(widget.repoPath),
+          ) ??
+          await ref
+              .read(notesRepositoryProvider)
+              .saveCachedFileToDownloads(config, widget.repoPath);
       _showSnackBar('已保存到: $savedPath');
     } catch (error) {
       _showSnackBar('保存失败: $error');
