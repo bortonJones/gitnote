@@ -2,11 +2,11 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-A lightweight offline-first GitHub Markdown reader for mobile.
+A lightweight offline-first GitHub repository file reader for mobile, focused on Markdown knowledge bases.
 
 GitNote is an Android-first Flutter app for:
 
-- Syncing Markdown documents from a GitHub repository
+- Syncing files from a GitHub repository or subdirectory
 - Local caching
 - Offline reading
 - Directory browsing
@@ -31,12 +31,17 @@ GitNote has one simple goal:
 - Offline-first reading
 - Local cache
 - Markdown reading
+- Mermaid diagram rendering in Markdown
+- Text file reading
+- Image preview
 - Directory tree browsing
 - Incremental sync via `sha`
 - Pull-to-refresh
+- Receive progress for large files
+- File share, save, and properties actions
 - Lightweight package size
 - Fast startup
-- Share Markdown to other apps
+- Share files to other apps
 
 ------
 
@@ -96,11 +101,14 @@ Recommended screenshots:
 
 # Supported File Types
 
-GitNote focuses on:
+GitNote can preview:
 
 - `.md`
-- `.txt`
+- `.markdown`
+- Text files such as `.txt`, `.log`, `.json`, `.yaml`, `.yml`, `.csv`, `.xml`
+- Images such as `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp`
 - Markdown embedded images
+- Mermaid code blocks in Markdown
 
 GitNote will continue focusing on:
 
@@ -118,7 +126,7 @@ The project will not evolve into:
 - Rich Text Editor
 - Universal File Manager
 
-Therefore GitNote will not support built-in rendering for:
+Therefore GitNote does not provide built-in preview rendering for:
 
 - PDF
 - DOCX
@@ -127,6 +135,7 @@ Therefore GitNote will not support built-in rendering for:
 
 For these file types, GitNote may only provide:
 
+- Receive/cache
 - Download
 - Share
 - Open with external apps
@@ -196,7 +205,7 @@ Current workflow:
 
 1. Sync directory tree
 2. Browse repository
-3. Open Markdown file
+3. Open a supported file
 4. Cache locally
 5. Read offline later
 
@@ -212,6 +221,7 @@ GitNote does not download the entire repository on first launch.
   files/
     README.md
     docs/xxx.md
+    assets/image.png
 ```
 
 ------
@@ -220,6 +230,7 @@ GitNote does not download the entire repository on first launch.
 
 - GitHub token is currently stored via `shared_preferences`
 - If GitHub Trees API returns `truncated=true`, GitNote will stop syncing and show a repository-too-large warning
+- Mermaid diagrams are rendered through an embedded WebView and load Mermaid.js from CDN, so diagram rendering requires network access
 
 ------
 

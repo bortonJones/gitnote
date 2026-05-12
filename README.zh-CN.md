@@ -2,11 +2,11 @@
 
 [English](README.md) | [简体中文](README.zh-CN.md)
 
-一个轻量、离线优先的移动端 GitHub Markdown 阅读器。
+一个轻量、离线优先的移动端 GitHub 仓库文件阅读器，重点面向 Markdown 知识库。
 
 GitNote 是一个 Android 优先的 Flutter 应用，用于：
 
-- 同步 GitHub 仓库中的 Markdown 文档
+- 同步 GitHub 仓库或子目录中的文件
 - 本地缓存
 - 离线阅读
 - 目录浏览
@@ -31,12 +31,17 @@ GitNote 的目标始终很简单：
 - 离线优先阅读
 - 本地缓存
 - Markdown 阅读
+- Markdown 中的 Mermaid 图表渲染
+- 文本文件阅读
+- 图片预览
 - 目录树浏览
 - 基于 `sha` 的增量同步
 - 下拉刷新
+- 大文件接收进度
+- 文件分享、保存和属性查看
 - 轻量安装包
 - 快速启动
-- 分享 Markdown 到其他应用
+- 分享文件到其他应用
 
 ------
 
@@ -96,11 +101,14 @@ GitNote 的目标始终很简单：
 
 # 支持的文件类型
 
-GitNote 重点支持：
+GitNote 可以预览：
 
 - `.md`
-- `.txt`
+- `.markdown`
+- 文本文件，例如 `.txt`、`.log`、`.json`、`.yaml`、`.yml`、`.csv`、`.xml`
+- 图片文件，例如 `.png`、`.jpg`、`.jpeg`、`.gif`、`.webp`、`.bmp`
 - Markdown 内嵌图片
+- Markdown 中的 Mermaid 代码块
 
 GitNote 会继续专注于：
 
@@ -118,7 +126,7 @@ GitNote 有意保持简洁。
 - 富文本编辑器
 - 通用文件管理器
 
-因此 GitNote 不会内置支持以下文件的渲染：
+因此 GitNote 不提供以下文件的内置预览渲染：
 
 - PDF
 - DOCX
@@ -127,6 +135,7 @@ GitNote 有意保持简洁。
 
 对于这些文件类型，GitNote 未来最多可能提供：
 
+- 接收 / 缓存
 - 下载
 - 分享
 - 使用外部应用打开
@@ -196,7 +205,7 @@ GitNote 使用：
 
 1. 同步目录树
 2. 浏览仓库
-3. 打开 Markdown 文件
+3. 打开支持的文件
 4. 缓存到本地
 5. 后续离线阅读
 
@@ -212,6 +221,7 @@ GitNote 不会在首次启动时下载整个仓库。
   files/
     README.md
     docs/xxx.md
+    assets/image.png
 ```
 
 ------
@@ -220,6 +230,7 @@ GitNote 不会在首次启动时下载整个仓库。
 
 - GitHub token 当前通过 `shared_preferences` 存储
 - 如果 GitHub Trees API 返回 `truncated=true`，GitNote 会停止同步并显示仓库过大的提示
+- Mermaid 图表通过内嵌 WebView 渲染，并从 CDN 加载 Mermaid.js，因此图表渲染需要网络访问
 
 ------
 
